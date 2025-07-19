@@ -1,9 +1,10 @@
 //O "*" quer dizer que estamos importando tudo da biblioteca expo-image-picker
 //e estamos apelidando essa biblioteca como ImagePicker, utilizando a palavra "as"
+import domtoimage from "dom-to-image";
 import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
 import { useRef, useState } from "react";
-import { ImageSourcePropType, StyleSheet, View } from "react-native";
+import { ImageSourcePropType, Platform, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { captureRef } from "react-native-view-shot";
 
@@ -84,20 +85,42 @@ export default function Index() {
 
   //Para salvar a imagem com sticker
   const onSaveImageAsync = async () => {
-    try {
-      //Vai capturar o conteudo do imageRef
-      const localUri = await captureRef(imageRef, {
-        height: 440,
-        quality: 1,
-      });
+    if (Platform.OS !== "web") { //Se o dispositivo não for navegador web
+      try {
+        //Vai capturar o conteudo do imageRef
+        const localUri = await captureRef(imageRef, {
+          height: 440,
+          quality: 1,
+        });
 
-      //Vai salvar a captura na biblioteca
-      await MediaLibrary.saveToLibraryAsync(localUri);
-      if (localUri) {
-        alert("Saved!");
+        //Vai salvar a captura na biblioteca
+        await MediaLibrary.saveToLibraryAsync(localUri);
+        if (localUri) {
+          alert("Saved!");
+        }
+      } catch (e) {
+        console.log(e);
       }
-    } catch (e) {
-      console.log(e);
+    } else { //Já se for navegador web
+      try {
+        //Vai capturar o conteudo do imageRef
+        const dataUrl = await domtoimage.toJpeg(imageRef.current, {
+          quality: 0.95,
+          width: 320,
+          height: 440,
+        });
+
+        //Cria um elemento link
+        let link = document.createElement("a");
+        //Ao ser clicado, vai fazer dowload de um arquivo com o nome sticker-smash.jpeg
+        link.download = "sticker-smash.jpeg";
+        //O link desse elemento é a url da captura
+        link.href = dataUrl;
+        //Clica no link, levando para a tela de download do Computador
+        link.click();
+      } catch (e) {
+        console.log(e);
+      }
     }
   };
 
@@ -105,7 +128,10 @@ export default function Index() {
     <GestureHandlerRootView style={styles.container}>
       <View style={styles.container}>
         <View style={styles.imageContainer}>
-          <View ref={imageRef} collapsable={false} /*Esse View será o conteudo do imageRef */>
+          <View
+            ref={imageRef}
+            collapsable={false} /*Esse View será o conteudo do imageRef */
+          >
             {/*Estamos usando a propriedade imgSource que definimos no componente para passar a imagem genérica
             E usamos o selectedImage para passar a imagem selecionada*/}
             <ImageViewer
