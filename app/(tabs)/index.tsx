@@ -1,25 +1,32 @@
 //O "*" quer dizer que estamos importando tudo da biblioteca expo-image-picker
 //e estamos apelidando essa biblioteca como ImagePicker, utilizando a palavra "as"
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
+import * as MediaLibrary from "expo-media-library";
+import { useRef, useState } from "react";
 import { ImageSourcePropType, StyleSheet, View } from "react-native";
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { captureRef } from "react-native-view-shot";
 
 //Importamos os componentes. como eles estão em uma pasta fora de app, então colocamos @ e o caminho do componente
 //Com @ representando o diretório do projeto
 import Button from "@/components/Button";
-import CircleButton from '@/components/CircleButton';
-import EmojiList from '@/components/EmojiList';
-import EmojiPicker from '@/components/EmojiPicker';
-import EmojiSticker from '@/components/EmojiSticker';
-import IconButton from '@/components/IconButton';
+import CircleButton from "@/components/CircleButton";
+import EmojiList from "@/components/EmojiList";
+import EmojiPicker from "@/components/EmojiPicker";
+import EmojiSticker from "@/components/EmojiSticker";
+import IconButton from "@/components/IconButton";
 import ImageViewer from "@/components/ImageViewer";
 
 //Aqui estamos carregando a imagem de exemplo
 const PlaceholderImage = require("@/assets/images/background-image.png");
 
 export default function Index() {
-  //Estamos definindo um estado com useState, que será uma especie de váriavel
+  //Essa várivel será o conteudo que será salvo como imagem
+  const imageRef = useRef<View>(null);
+
+  //Estamos definindo estados com useState, que será uma especie de váriaveis
+  //requestPermission faz a aplicação pedir permissão do usuário para acessar a biblioteca
+  const [status, requestPermission] = MediaLibrary.usePermissions();
   //vamos utilizar esse estado para guardar a imagem selecionada
   const [selectedImage, setSelectedImage] = useState<string | undefined>(
     undefined
@@ -29,7 +36,14 @@ export default function Index() {
   //Usar esse estado para definir se o modal será visivel
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   //Usar essa váriavel para definir se o emoji será visivel
-  const [pickedEmoji, setPickedEmoji] = useState<ImageSourcePropType | undefined>(undefined);
+  const [pickedEmoji, setPickedEmoji] = useState<
+    ImageSourcePropType | undefined
+  >(undefined);
+
+  //Se não tiver permissão, então vai pedir
+  if (status === null) {
+    requestPermission();
+  }
 
   //Com essa função, vamos selecionar a imagem
   const pickImageAsync = async () => {
@@ -68,34 +82,65 @@ export default function Index() {
     setIsModalVisible(false);
   };
 
+  //Para salvar a imagem com sticker
   const onSaveImageAsync = async () => {
-    // we will implement this later
+    try {
+      //Vai capturar o conteudo do imageRef
+      const localUri = await captureRef(imageRef, {
+        height: 440,
+        quality: 1,
+      });
+
+      //Vai salvar a captura na biblioteca
+      await MediaLibrary.saveToLibraryAsync(localUri);
+      if (localUri) {
+        alert("Saved!");
+      }
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   return (
     <GestureHandlerRootView style={styles.container}>
       <View style={styles.container}>
         <View style={styles.imageContainer}>
-          {/*Estamos usando a propriedade imgSource que definimos no componente para passar a imagem genérica
+          <View ref={imageRef} collapsable={false} /*Esse View será o conteudo do imageRef */>
+            {/*Estamos usando a propriedade imgSource que definimos no componente para passar a imagem genérica
             E usamos o selectedImage para passar a imagem selecionada*/}
-          <ImageViewer
-            imgSource={PlaceholderImage}
-            selectedImage={selectedImage}
-          />
-          {/*Caso um emoji tiver sido selecionado, vamos exibir ele com EmojiSticker */}
-          {pickedEmoji && <EmojiSticker imageSize={40} stickerSource={pickedEmoji} />}
+            <ImageViewer
+              imgSource={PlaceholderImage}
+              selectedImage={selectedImage}
+            />
+            {/*Caso um emoji tiver sido selecionado, vamos exibir ele com EmojiSticker */}
+            {pickedEmoji && (
+              <EmojiSticker imageSize={40} stickerSource={pickedEmoji} />
+            )}
+          </View>
         </View>
         {/*Caso for para exibir as opções de emoji */}
         {showAppOptions ? (
           <View style={styles.optionsContainer}>
             <View style={styles.optionsRow}>
-              <IconButton icon="refresh" label="Reset" onPress={onReset} /*Botão de resetar */ />
-              <CircleButton onPress={onAddSticker} /*Botão de selecionar o emoji */ />
-              <IconButton icon="save-alt" label="Save" onPress={onSaveImageAsync} /*Botão de salvar o emoji */ />
+              <IconButton
+                icon="refresh"
+                label="Reset"
+                onPress={onReset} /*Botão de resetar */
+              />
+              <CircleButton
+                onPress={onAddSticker} /*Botão de selecionar o emoji */
+              />
+              <IconButton
+                icon="save-alt"
+                label="Save"
+                onPress={onSaveImageAsync} /*Botão de salvar o emoji */
+              />
             </View>
           </View>
         ) : (
-          <View style={styles.footerContainer}> {/*Caso não for para exibir as opções de emoji */}
+          <View style={styles.footerContainer}>
+            {" "}
+            {/*Caso não for para exibir as opções de emoji */}
             {/*Passamos a função pickImageAsync para o botão de selecionar imagem */}
             <Button
               theme="primary"
@@ -108,8 +153,14 @@ export default function Index() {
             />
           </View>
         )}
-        <EmojiPicker isVisible={isModalVisible} onClose={onModalClose} /*Esse será o modal para selecionar o emoji */ >
-          <EmojiList onSelect={setPickedEmoji} onCloseModal={onModalClose} /*Lista dentro do modal para mostrar os emojis */ />
+        <EmojiPicker /*Esse será o modal para selecionar o emoji */
+          isVisible={isModalVisible}
+          onClose={onModalClose}
+        >
+          <EmojiList /*Lista dentro do modal para mostrar os emojis */
+            onSelect={setPickedEmoji}
+            onCloseModal={onModalClose}
+          />
         </EmojiPicker>
       </View>
     </GestureHandlerRootView>
@@ -139,11 +190,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   optionsContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 80,
   },
   optionsRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    flexDirection: "row",
   },
 });

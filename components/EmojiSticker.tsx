@@ -59,9 +59,9 @@ export default function EmojiSticker({ imageSize, stickerSource }: Props) {
   });
 
   return (
-    <GestureDetector gesture={drag}> {/*Aqui pega o gesto de arrastar */}
+    <GestureDetector gesture={drag} /*Aqui detecta o arrastar */>
       <Animated.View style={[containerStyle, { top: -350 }]}> {/*Vai ser uma view qua vai aplicar as animações */}
-        <GestureDetector gesture={doubleTap}> {/*Aqui pega o gesto de aperto duplo */}
+        <GestureDetector gesture={doubleTap} /*Aqui detecta o aperto duplo */>
           <Animated.Image //Aqui é a imagem que vai aplicar as animações
             source={stickerSource}
             resizeMode="contain"
