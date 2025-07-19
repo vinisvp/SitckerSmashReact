@@ -1,75 +1,149 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+//O "*" quer dizer que estamos importando tudo da biblioteca expo-image-picker
+//e estamos apelidando essa biblioteca como ImagePicker, utilizando a palavra "as"
+import * as ImagePicker from "expo-image-picker";
+import { useState } from "react";
+import { ImageSourcePropType, StyleSheet, View } from "react-native";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+//Importamos os componentes. como eles estão em uma pasta fora de app, então colocamos @ e o caminho do componente
+//Com @ representando o diretório do projeto
+import Button from "@/components/Button";
+import CircleButton from '@/components/CircleButton';
+import EmojiList from '@/components/EmojiList';
+import EmojiPicker from '@/components/EmojiPicker';
+import EmojiSticker from '@/components/EmojiSticker';
+import IconButton from '@/components/IconButton';
+import ImageViewer from "@/components/ImageViewer";
 
-export default function HomeScreen() {
+//Aqui estamos carregando a imagem de exemplo
+const PlaceholderImage = require("@/assets/images/background-image.png");
+
+export default function Index() {
+  //Estamos definindo um estado com useState, que será uma especie de váriavel
+  //vamos utilizar esse estado para guardar a imagem selecionada
+  const [selectedImage, setSelectedImage] = useState<string | undefined>(
+    undefined
+  );
+  //Usar esse estado para mostrar as opções de emoji
+  const [showAppOptions, setShowAppOptions] = useState<boolean>(false);
+  //Usar esse estado para definir se o modal será visivel
+  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  //Usar essa váriavel para definir se o emoji será visivel
+  const [pickedEmoji, setPickedEmoji] = useState<ImageSourcePropType | undefined>(undefined);
+
+  //Com essa função, vamos selecionar a imagem
+  const pickImageAsync = async () => {
+    //o launchImageLibraryAsync seleciona imagens do dispositivo do usuário
+    //o await é necessário, pois precisamos que a seleção termine para guardar a imagem
+    let result = await ImagePicker.launchImageLibraryAsync({
+      //Algumas opções para a seleção
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    //o canceled é um boolean se diz se o usuário cancelou a seleção
+    if (!result.canceled) {
+      //Caso não tenha sido cancelada, então guardamos o uri da primeira imagem no estado
+      setSelectedImage(result.assets[0].uri);
+      setShowAppOptions(true);
+      console.log(result);
+    } else {
+      alert("You did not select any image.");
+    }
+  };
+
+  //Para resetar, ou seja, tirar as opções e deixar os botões de selecionar imagem
+  const onReset = () => {
+    setShowAppOptions(false);
+  };
+
+  //Para exibir o modal para selecionar o emoji
+  const onAddSticker = () => {
+    setIsModalVisible(true);
+  };
+
+  //Para parar de exibir o modal de selecionar emoji
+  const onModalClose = () => {
+    setIsModalVisible(false);
+  };
+
+  const onSaveImageAsync = async () => {
+    // we will implement this later
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <GestureHandlerRootView style={styles.container}>
+      <View style={styles.container}>
+        <View style={styles.imageContainer}>
+          {/*Estamos usando a propriedade imgSource que definimos no componente para passar a imagem genérica
+            E usamos o selectedImage para passar a imagem selecionada*/}
+          <ImageViewer
+            imgSource={PlaceholderImage}
+            selectedImage={selectedImage}
+          />
+          {/*Caso um emoji tiver sido selecionado, vamos exibir ele com EmojiSticker */}
+          {pickedEmoji && <EmojiSticker imageSize={40} stickerSource={pickedEmoji} />}
+        </View>
+        {/*Caso for para exibir as opções de emoji */}
+        {showAppOptions ? (
+          <View style={styles.optionsContainer}>
+            <View style={styles.optionsRow}>
+              <IconButton icon="refresh" label="Reset" onPress={onReset} /*Botão de resetar */ />
+              <CircleButton onPress={onAddSticker} /*Botão de selecionar o emoji */ />
+              <IconButton icon="save-alt" label="Save" onPress={onSaveImageAsync} /*Botão de salvar o emoji */ />
+            </View>
+          </View>
+        ) : (
+          <View style={styles.footerContainer}> {/*Caso não for para exibir as opções de emoji */}
+            {/*Passamos a função pickImageAsync para o botão de selecionar imagem */}
+            <Button
+              theme="primary"
+              label="Choose a photo"
+              onPress={pickImageAsync}
+            />
+            <Button
+              label="Use this photo"
+              onPress={() => setShowAppOptions(true)}
+            />
+          </View>
+        )}
+        <EmojiPicker isVisible={isModalVisible} onClose={onModalClose} /*Esse será o modal para selecionar o emoji */ >
+          <EmojiList onSelect={setPickedEmoji} onCloseModal={onModalClose} /*Lista dentro do modal para mostrar os emojis */ />
+        </EmojiPicker>
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: "#25292e",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  text: {
+    color: "#fff",
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
+  button: {
+    fontSize: 20,
+    textDecorationLine: "underline",
+    color: "#fff",
+  },
+  imageContainer: {
+    flex: 1,
+  },
+  footerContainer: {
+    flex: 1 / 3,
+    alignItems: "center",
+  },
+  optionsContainer: {
     position: 'absolute',
+    bottom: 80,
+  },
+  optionsRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
   },
 });
